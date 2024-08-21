@@ -1,0 +1,62 @@
+# Directories
+IGNORE_DIRS :=
+BUILD_DIR := $(CURDIR)/build
+OBJ_DIR := $(CURDIR)/build/objs
+
+INCLUDE_FILES_EXTENTIONS := .hpp .tpp .inl .h
+OBJ_FILE_EXTENSION := .o
+SOURCE_FILES_EXTENTIONS := .cpp .cc
+
+# Multiple names allowed you can specify thier sources and flags be setting variable $(NAME)_SOURCES $(NAME)_FLAGS
+# If target or name are empty linking is skipped
+NAMES := Game
+# Either EXECUTABLE, SHARED, DYNAMIC or STATIC (nothing considered as EXECUTABLE)
+# Multiple are allowed they are bound to the names in same order i.e.
+# NAMES := MyLib Game Test
+# TARGETS := STATIC EXECUTABLE
+# Means that first static library libMyLib.a then Game.exe then Test.exe will be generated
+TARGETS :=
+# Can call $(call get_files_path,list of paths) or $(call get_files_recur,list of paths) (*)
+SOURCES := $(call get_files_recur,$(CURDIR)/src)
+# Either DEBUG, RELEASE, MINSIZEREL or RELWITHDEBINFO
+MODE := DEBUG
+# (*)
+COMPILER := g++
+
+# (*)
+INCLUDE_DIRS := Eigen
+# (*)
+FLAGS := -Wall -Wextra -Wdeprecated -pedantic-errors -fmax-errors=10 -Wshadow -std=c++17
+# (*)
+DEBUG_FLAGS := -g
+# (*)
+RELEASE_FLAGS := -O3 -DNDEBUG
+# (*)
+MINSIZEREL_FLAGS := -Os -DNDEBUG
+# (*)
+RELWITHDEBINFO_FLAGS := -O2 -g -DNDEBUG
+# Should specify -c if intended to compile to .o files (*)
+OBJ_ONLY_FLAGS := -c
+# (*)
+LINK_ONLY_FLAGS :=
+
+# Specify paths to other makefiles to execute before compiling this one
+SUB_DIRS :=
+
+# Arguments to execute program (*)
+EXEC_ARGS :=
+# Dependancies for rule in makefile (*)
+ADDITIONAL_OBJ_DEPENDENCIES :=
+# Dependancies for rule in makefile (*)
+ADDITIONAL_LINK_DEPENDENCIES :=
+
+# Can specify commands to call before and after compiling (*)
+EXEC_BEFORE_COMPILE :=
+EXEC_AFTER_COMPILE :=
+
+# To enable should be set to @
+MAKE_SILENT := 
+# Leave empty to disable logging
+PROGRESS := 1
+# Either compile, run or all
+.DEFAULT_GOAL := compile
