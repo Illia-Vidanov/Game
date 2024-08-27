@@ -1,7 +1,6 @@
 #include "FlagParser.hpp"
 
 #include <string>
-#include <cstring>
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
@@ -12,43 +11,7 @@
 
 namespace game
 {
-auto Flags::Count(const std::string &flag, const char **first, const char **last) noexcept -> std::size_t
-{
-  std::size_t count = 0;
-
-  for(; first != last; first++)
-    count += StringStartsWith(flag, std::string(*first));
-
-  return count;
-}
-
-auto Flags::Contains(const std::string &flag, const char **first, const char **last) noexcept -> const char **
-{
-  for(; first != last; first++)
-  {
-    if(StringStartsWith(flag, std::string(*first)))
-      return first;
-  }
-
-  return nullptr;
-}
-
-auto Flags::Get(const std::string &flag, const char **first, const char **last) noexcept -> std::string
-{
-  std::size_t strings_used = 0;
-  for(; first != last; first++)
-  {
-    const auto &key_and_value = ParseFlag(first, last, &strings_used);
-    if(key_and_value.first == flag)
-      return key_and_value.second;
-    
-    first += strings_used;
-  }
-
-  return "";
-}
-
-auto Flags::ParseFlag(const char **flag_begin, const char **possible_flag_end, std::size_t *strings_used, const std::string &delim) noexcept -> MapType::value_type
+auto Flags::ParseFlag(ConstArgvType flag_begin, const ConstArgvType possible_flag_end, std::size_t *strings_used, const std::string &delim) noexcept -> MapType::value_type
 {
   enum
   {
@@ -70,7 +33,7 @@ auto Flags::ParseFlag(const char **flag_begin, const char **possible_flag_end, s
 
   int state = kReadingKey;
   int in_state = 0;
-  std::size_t flag_size = strlen(*flag_begin);
+  std::size_t flag_size = std::char_traits<char>::length(*flag_begin);
   std::string key;
   std::string value;
 
@@ -166,7 +129,7 @@ auto Flags::ParseFlag(const char **flag_begin, const char **possible_flag_end, s
           return MapType::value_type();
         }
 
-        flag_size = strlen(*flag_begin);
+        flag_size = std::char_traits<char>::length(*flag_begin);
         if(strings_used != nullptr)
           *strings_used += 1;
 
@@ -201,7 +164,7 @@ auto Flags::ParseFlag(const char **flag_begin, const char **possible_flag_end, s
           return MapType::value_type();
         }
 
-        flag_size = strlen(*flag_begin);
+        flag_size = std::char_traits<char>::length(*flag_begin);
         if(strings_used != nullptr)
           *strings_used += 1;
 
@@ -229,7 +192,7 @@ auto Flags::ParseFlag(const char **flag_begin, const char **possible_flag_end, s
 void Flags::Parse() noexcept
 {
   std::size_t strings_used = 0;
-  for(const char **str = begin_; str != end_;)
+  for(ConstArgvType str = begin_; str != end_;)
   {
     flags_.insert(ParseFlag(str, end_, &strings_used, delim_));
     str += strings_used;

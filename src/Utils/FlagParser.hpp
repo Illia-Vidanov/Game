@@ -13,119 +13,89 @@
 
 namespace game
 {
-/// @brief Class to parse flags
+/// Class to parse flags
 ///
-/// Values being supported in format of (flag)(delimetr)(optional quote)(value even with space)(optional quote)
+/// Values being supported in format of (flag)(delimetr)(value)
+/// Value can be with spaces if surrounded by quotes '"'
+/// Can use quotes inside quotes if back slash '\' is present before quotation mark
 class Flags
 {
 public:
   using MapType = std::unordered_multimap<std::string, std::string>;
   using RangeType = std::pair<MapType::const_iterator, MapType::const_iterator>;
+  using ConstArgvType = const char * const *;
 
-  /// @brief Parse flags with delimetr "="
+  /// Initialize class with arguments from main function
+  inline Flags(const int argc, ConstArgvType argv) noexcept : begin_(argv), end_(argv + argc) { Parse(); }
+
+  /// Parse flags with custom delimetr
   ///
-  /// @param argc argument count
-  /// @param argv pointer to array of c-style strings(arguments)
-  inline Flags(const int argc, const char **argv) noexcept : begin_(argv), end_(argv + argc) { Parse(); }
+  /// default flag_delim = "="
+  /// It's delimetr between flag and value (Example: -flag=value   "=" is flag_delim here)
+  inline Flags(const int argc, ConstArgvType argv, const std::string &flag_delim) noexcept : begin_(argv), end_(argv + argc), delim_(flag_delim) { assert(!flag_delim.empty()); Parse(); }
 
-  /// @brief Parse flags with custom delimetr
+
+  /// Count of flags
   ///
-  /// @param argc argument count
-  /// @param argv pointer to array of c-style strings(arguments)
-  /// @param flag_delim delimetr between flag and value (Example: -flag=value  '=' is flag_delim here)
-  inline Flags(const int argc, const char **argv, const std::string &flag_delim) noexcept : begin_(argv), end_(argv + argc), delim_(flag_delim) { assert(!flag_delim.empty()); Parse(); }
-
-
-  /// @brief Count of flags
-  ///
-  /// @param flag
-  /// @return count of same @param flags
+  /// return occurrences of same flag
   inline auto Count(const std::string &flag) const noexcept -> int { return flags_.count(flag); }
 
-  /// @brief Check if contains a @param flag
+  /// Check if contains a @param flag
   ///
-  /// @param flag
-  /// @return true if args contain @param flag , false otherwise
+  /// return true if contains flag, false otherwise
   inline auto Contains(const std::string &flag) const noexcept -> bool { return flags_.find(flag) != flags_.end(); }
 
-  /// @brief Get flag value
+  /// Get flag value
   ///
   /// If flag doesn't contain a value or don't exists empty string is returned
-  /// @param flag
-  /// @return string with flag value, if multiple are present any of them can be returned
+  /// return string with flag value, if multiple are present any of them can be returned
   inline auto Get(const std::string &flag) const noexcept -> std::string { const auto it = flags_.find(flag); return (it == flags_.end() ? "" : it->second); }
+  
   /// Get range of flags with same key
   ///
   /// If flag doesn't exist past the end element is returned for both iterators
-  /// @param flag
-  /// @return std::pair<MapType::const_iterator, MapType::const_iterator>(begin, end) i.e. Flags::RangeType
+  /// return pair with begin and end of range i.e. Flags::RangeType
   inline auto GetRange(const std::string &flag) const noexcept -> RangeType { return flags_.equal_range(flag); }
 
 
-  /// @brief Get constant iterator to the begining of flag map
+  /// Get constant iterator to the begining of flag map
   ///
-  /// @return constant iterator to the begining of flag map
+  /// return constant iterator to the begining of flag map
   inline auto begin() const noexcept -> MapType::const_iterator { return flags_.cbegin(); }
 
-  /// @brief  Get constant iterator to the end of flag map
+  ///  Get constant iterator to the end of flag map
   ///
-  /// @return constant iterator to the end of flag map
+  /// return constant iterator to the end of flag map
   inline auto end() const noexcept -> MapType::const_iterator { return flags_.cend(); }
 
 
-  /// @brief Concate arguments to a single string
+  /// Concate arguments to a single string
   ///
-  /// @param delim (default - " ")
-  /// @return A string containing all flags separated by @param delim
+  /// default delim = " "
+  /// return a string containing all flags separated by delim
   inline auto GetArgsAsString(const std::string &delim = " ") const noexcept -> std::string { return ConcatStringArray(begin_, end_, delim); }
 
 
-  /// @brief Count of flags
-  ///
-  /// @param flag
-  /// @param first first element of arguments array
-  /// @param last past the end element of arguments array
-  /// @return count of same flags
-  static auto Count(const std::string &flag, const char **first, const char **last) noexcept -> std::size_t;
-
-  /// @brief Check if contains a @param flag
-  ///
-  /// @param flag
-  /// @param first first element of arguments array
-  /// @param last past the end element of arguments array
-  /// @return true if args contain such flag, false otherwise
-  static auto Contains(const std::string &flag, const char **first, const char **last) noexcept -> const char**;
-
-  /// @brief Get flag value
-  ///
-  /// If flag doesn't contain a value or don't exists empty string is returned
-  /// @param flag
-  /// @param first first element of arguments array
-  /// @param last past the end element of arguments array
-  /// @return string with flag value, if multiple are present any of them can be returned
-  static auto Get(const std::string &flag, const char **first, const char **last) noexcept -> std::string;
-
-  /// @brief Default delimetr between flag and value
+  /// Default delimetr between flag and value
   static inline constexpr const char *kDefDelim = "=";
 
 private:
-  const char **begin_;
-  const char **end_;
-
+  const ConstArgvType begin_;
+  const ConstArgvType end_;
   const std::string delim_ = kDefDelim;
 
   MapType flags_;
 
-  /// @brief Parse flag into key/value pair
+  /// Parse flag into key/value pair
   ///
-  /// @param flag_begin first falg to be parsed
-  /// @param possible_flag_end past the end element of the whole flags array. If flag might be made of several strings, spaces inside value, uses more than one flag
-  /// @param[out] strings_used (optional) ammount of strings used by function, minimum 1
-  /// @param delim (default - " ") delimetr between flag and value (Example: -flag=value '=' is flag_delim here)
-  /// @return std::pair<std::string, std::string>(flag, value)
-  static auto ParseFlag(const char **flag_begin, const char **possible_flag_end, std::size_t *strings_used = nullptr, const std::string &delim = kDefDelim) noexcept -> MapType::value_type;
+  /// flag_begin first falg to be parsed
+  /// possible_flag_end past the end element of the whole flags array. If flag might be made of several strings, spaces inside value, uses more than one flag
+  /// strings_used (out, optional) ammount of strings used by function, minimum 1
+  /// delimetr (default = " ") between flag and value (Example: -flag=value    '=' is flag_delim here)
+  /// return pair with flag and value
+  static auto ParseFlag(ConstArgvType flag_begin, const ConstArgvType possible_flag_end, std::size_t *strings_used = nullptr, const std::string &delim = kDefDelim) noexcept -> MapType::value_type;
   
-  /// @brief Parse internal flags
+  /// Parse internal flags
   ///
   /// Polutes flags_ map with values
   void Parse() noexcept;

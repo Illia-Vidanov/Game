@@ -5,81 +5,71 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include <cstring>
 #include <filesystem>
 
+#include "Setup.hpp"
 
-/// @brief Add current path to string
+
+namespace game
+{
+namespace detail
+{
+  template<typename CharT = char>
+  using ConstRawStrArray = const CharT * const *;
+}
+
+/// Add current path to string
 ///
-/// @param str
-/// @return current path + '/' + @param str
+/// return current path + '/' + str
 template<typename CharT>
 inline auto AddCurrentPathToString(const std::basic_string<CharT> &str) -> std::basic_string<CharT>
 { return std::filesystem::current_path().generic_string<CharT>() + std::basic_string<CharT>(1, static_cast<CharT>('/')) + str; }
 
-/// @brief Remove current path to string
+/// Remove current path to string
 ///
-/// @param str
-/// @return string without current path
+/// return string without current path
 template<typename CharT>
 inline auto RemoveCurrentPathFromString(const std::basic_string<CharT> &str) -> std::basic_string<CharT>;
 
-/// @brief Split string by delimetr in vector of strings
+/// Split string by delimetr in vector of strings
 ///
-/// @param str
-/// @param delim (default - " ")
-/// @return vector of strings
+/// default delim = " "
+/// return vector of strings
 template<typename CharT>
-inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim = " ") -> std::vector<std::basic_string<CharT>>;
-/// @brief Split string by delimetr in vector of strings
+inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim = " ") noexcept -> std::vector<std::basic_string<CharT>>;
+/// Split string by delimetr in vector of strings
 ///
-/// @param str
-/// @param delim (default - " ")
-/// @return vector of strings
+/// default delim = " "
+/// return vector of strings
 template<typename CharT>
-inline auto SplitString(const std::basic_string<CharT> &str, CharT delim) -> std::vector<std::basic_string<CharT>>
+inline auto SplitString(const std::basic_string<CharT> &str, CharT delim) noexcept -> std::vector<std::basic_string<CharT>>
 { return SplitString(str, std::basic_string<CharT>(1, delim)); }
 
-/// @brief Check if string starts with certain prefix
+/// Check if string starts with certain prefix
 ///
 /// Doesn't perform bounds checking so if prefix.size() > string.size() behaviour is undefined
-/// @param prefix
-/// @param str
-/// @return true if @param str starts with @param prefix
+/// return true if str starts with prefix
 template<typename CharT>
 inline auto StringStartsWith(const std::basic_string<CharT> &prefix, const std::basic_string<CharT> &str) noexcept -> bool;
 
-/// @brief Count amount of substrings in string
+/// Count amount of substrings in string
 ///
-/// @param str
-/// @param substr
-/// @return amount of occurances of @param substr in @param str
+/// return amount of occurances of substr in str
 template<typename CharT>
 inline auto SubstringCount(const std::basic_string<CharT> &str, const std::basic_string<CharT> &substr) noexcept -> std::size_t;
 
-/// @brief Get char count of raw string array
+/// Get char count of raw string array
 ///
-/// @param first begin of c-style string array
-/// @param last past the end element of c-style string array
-/// @return charachter count of all strings in array
+/// return charachter count of all strings in array
 template<typename CharT>
-inline constexpr auto RawStringArrayLength(const CharT **first, const CharT **last) noexcept -> std::size_t; 
+inline constexpr auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t; 
 
-/// @brief Connect raw string array into single string with delimetr
+/// Connect raw string array into single string with delimetr
 ///
-/// @param first begin of c-style string array
-/// @param last past the end element of c-style string array
-/// @param delim (default - "")
-/// @return string with elements from @param first to @param last separated by @param delim 
+/// default delim = ""
+/// return string with elements from first to last separated by delim 
 template<typename CharT>
-inline auto ConcatStringArray(const CharT **first, const CharT **last, const std::basic_string<CharT> &delim = "") noexcept -> std::basic_string<CharT>;
-
-/// @brief strlen but templated for different char types
-///
-/// @param str
-/// @return count of chars in @param str
-template<typename CharT>
-inline constexpr auto StrLen(const CharT *str) noexcept -> std::size_t;
+inline auto ConcatStringArray(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last, const std::basic_string<CharT> &delim = "") noexcept -> std::basic_string<CharT>;
 
 
 
@@ -93,7 +83,7 @@ inline auto RemoveCurrentPathFromString(const std::basic_string<CharT> &str) -> 
 }
 
 template<typename CharT>
-inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim) -> std::vector<std::basic_string<CharT>>
+inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim) noexcept -> std::vector<std::basic_string<CharT>>
 {
 	std::vector<std::basic_string<CharT>> result(SubstringCount(str, delim) + 1);
 	
@@ -145,17 +135,17 @@ inline auto SubstringCount(const std::basic_string<CharT> &str, const std::basic
 }
 
 template<typename CharT>
-inline constexpr auto RawStringArrayLength(const CharT **first, const CharT **last) noexcept -> std::size_t
+inline constexpr auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t
 {
   std::size_t result = 0;
 	for(; first != last; first++)
-		result += StrLen(*first);
+		result += std::char_traits<CharT>::length(*first);
 
 	return result;
 }
 
 template<typename CharT>
-inline auto ConcatStringArray(const CharT **first, const CharT **last, const std::basic_string<CharT> &delim) noexcept -> std::basic_string<CharT>
+inline auto ConcatStringArray(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last, const std::basic_string<CharT> &delim) noexcept -> std::basic_string<CharT>
 {
 	std::string result;
 	result.reserve(RawStringArrayLength(first, last) + (last - first - 1) * delim.size());
@@ -168,18 +158,6 @@ inline auto ConcatStringArray(const CharT **first, const CharT **last, const std
 
 	return result;
 }
-
-template <typename CharT>
-inline constexpr auto StrLen(const CharT *str) noexcept -> std::size_t
-{
-  std::size_t result = 0;
-  while(*str != static_cast<CharT>('\0'))
-	{
-    result++;
-		str++;
-	}
-
-  return result;
-}
+} // game
 
 #endif // STRING_UTILS_HPP
