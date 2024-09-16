@@ -35,13 +35,13 @@ Game::Game(const int argc, const char * const *argv) noexcept
 
   renderer_.Init(*this);
 
-  events_.AddListener(event_cleaner_, kQuitEvent, this,
+  events_.AddListener(event_cleaner_, EventType::Quit, this,
     [](__attribute__((unused)) const Event &event, void *data) -> bool
     {
       reinterpret_cast<Game*>(data)->QuitEvent();
       return true;
     });
-  events_.AddListener(event_cleaner_, kKeyDownEvent, this,
+  events_.AddListener(event_cleaner_, EventType::KeyDown, this,
     [](const Event &event, void *data) -> bool
     {
       if(event.GetKeycode() != SDLK_ESCAPE)

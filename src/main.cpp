@@ -1,8 +1,7 @@
 /*
 Todo:
-1. Change event naming
-6. Renderer version log
 */
+
 #include "Setup.hpp"
 
 #include "Core/Game.hpp"

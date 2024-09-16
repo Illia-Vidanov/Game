@@ -32,6 +32,14 @@ OpenGLRenderer::OpenGLRenderer() noexcept
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 }
 
+void OpenGLRenderer::PrintDebugInfo() const noexcept
+{
+  GAME_LOG(LogType::Info) << "GL Vendor:           " << glGetString(GL_VENDOR)                   << '\n'
+                          << "GL Renderer:         " << glGetString(GL_RENDERER)                 << '\n'
+                          << "GL Version:          " << glGetString(GL_VERSION)                  << '\n'
+                          << "GL Shading Lnaguage: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
+}
+
 void OpenGLRenderer::Init(Game &game) noexcept
 {
   ZoneScopedC(0x07dbd4);
@@ -41,6 +49,8 @@ void OpenGLRenderer::Init(Game &game) noexcept
   GAME_ASSERT(context_ != nullptr) << "Couldn't initialize opengl context: " << SDL_GetError();
   if(!gladLoadGLLoader(SDL_GL_GetProcAddress))
     GAME_ASSERT(false) << "Failed to load GL loader";
+
+  PrintDebugInfo();
 
   GL_CALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 }

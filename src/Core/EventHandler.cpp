@@ -6,6 +6,8 @@
 
 #include <SDL2/SDL.h>
 
+#include "Utils/Enum.hpp"
+
 
 namespace game
 {
@@ -30,13 +32,13 @@ void EventHandler::DispatchEvent(const Event &event) noexcept
   }
 }
 
-void EventHandler::ClearListeners(Event::TypeType type) noexcept
+void EventHandler::ClearListeners(EventType type) noexcept
 {
   std::pair<MapType::const_iterator, MapType::const_iterator> range = listeners_.equal_range(type);
   listeners_.erase(range.first, range.second);
 }
 
-auto EventHandler::AddListener(EventCleaner &cleaner, Event::TypeType type, void *data, CallbackType callback) noexcept -> MapPtrType
+auto EventHandler::AddListener(EventCleaner &cleaner, EventType type, void *data, CallbackType callback) noexcept -> MapPtrType
 {
   MapPtrType it = listeners_.insert(MapType::value_type(type, MapValueType(data, callback)));
   cleaner.AddPtr(it);
@@ -84,18 +86,18 @@ auto Event::GetName() const noexcept -> std::string
 {
   switch(GetType())
   {
-  case kNoneEvent:
+  case EventType::None:
     return "None";
-  case kQuitEvent:
+  case EventType::Quit:
     return "Quit";
-  case kKeyDownEvent:
+  case EventType::KeyDown:
     return "Key Down";
-  case kKeyUpEvent:
+  case EventType::KeyUp:
     return "Key Up";
-  case kKeyPressedEvent:
+  case EventType::KeyPressed:
     return "Key Pressed";
   default:
-    return "Other: " + std::to_string(GetType());
+    return "Other: " + std::to_string(ToUnderlying(GetType()));
   }
 }
 }

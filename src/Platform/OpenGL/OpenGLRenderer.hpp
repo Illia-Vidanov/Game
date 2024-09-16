@@ -29,6 +29,8 @@ public:
 private:
   OpenGLRenderer() noexcept;
 
+  void PrintDebugInfo() const noexcept;
+
   Game *game_ = nullptr;
   void *context_; // even in implementation SDL_GLContext is just typedef to void* 
 };
