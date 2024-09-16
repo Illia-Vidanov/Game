@@ -2,6 +2,7 @@
 #define GAME_GAME_HPP
 
 #include "Setup.hpp"
+
 #include "Utils/FlagParser.hpp"
 #include "Core/Renderer.hpp"
 #include "Core/Window.hpp"
@@ -32,13 +33,14 @@ private:
 
   /// Main game loop
   void Run() noexcept;
+  /// Call back of SDL_QuitEvent
   void QuitEvent();
   /// Close application
   void Exit() noexcept;
 
   bool running_ = false;
-  EventHandler events_;
   Flags flags_;
+  EventHandler events_;
   EventCleaner event_cleaner_;
   // In this case I use reference just because it's handy and the class surely shouldn't be moved or copied
   Renderer &renderer_;

@@ -24,6 +24,7 @@ public:
   /// Deinit renderer and clear memory
   virtual void Exit() noexcept = 0;
 
+  /// Used to get SDL_WINDOW_OPENGL or SDL_WINDOW_VUKAN or ...
   virtual auto GetSDLWindowFlags() const noexcept -> int = 0;
 };
 } // game

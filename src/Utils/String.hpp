@@ -19,53 +19,37 @@ namespace detail
 }
 
 /// Add current path to string
-///
 /// return current path + '/' + str
 template<typename CharT>
 inline auto AddCurrentPathToString(const std::basic_string<CharT> &str) -> std::basic_string<CharT>
 { return std::filesystem::current_path().generic_string<CharT>() + std::basic_string<CharT>(1, static_cast<CharT>('/')) + str; }
 
-/// Remove current path to string
-///
-/// return string without current path
 template<typename CharT>
 inline auto RemoveCurrentPathFromString(const std::basic_string<CharT> &str) -> std::basic_string<CharT>;
 
 /// Split string by delimetr in vector of strings
-///
 /// default delim = " "
-/// return vector of strings
 template<typename CharT>
 inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim = " ") noexcept -> std::vector<std::basic_string<CharT>>;
 /// Split string by delimetr in vector of strings
-///
 /// default delim = " "
-/// return vector of strings
 template<typename CharT>
 inline auto SplitString(const std::basic_string<CharT> &str, CharT delim) noexcept -> std::vector<std::basic_string<CharT>>
 { return SplitString(str, std::basic_string<CharT>(1, delim)); }
 
 /// Check if string starts with certain prefix
-///
 /// Doesn't perform bounds checking so if prefix.size() > string.size() behaviour is undefined
-/// return true if str starts with prefix
 template<typename CharT>
 inline auto StringStartsWith(const std::basic_string<CharT> &prefix, const std::basic_string<CharT> &str) noexcept -> bool;
 
-/// Count amount of substrings in string
-///
-/// return amount of occurances of substr in str
 template<typename CharT>
 inline auto SubstringCount(const std::basic_string<CharT> &str, const std::basic_string<CharT> &substr) noexcept -> std::size_t;
 
-/// Get char count of raw string array
-///
-/// return charachter count of all strings in array
+/// Get charachter count of all strings in array
 template<typename CharT>
-inline constexpr auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t; 
+constexpr inline auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t; 
 
 /// Connect raw string array into single string with delimetr
-///
 /// default delim = ""
 /// return string with elements from first to last separated by delim 
 template<typename CharT>
@@ -76,6 +60,8 @@ inline auto ConcatStringArray(detail::ConstRawStrArray<CharT> first, const detai
 template<typename CharT>
 inline auto RemoveCurrentPathFromString(const std::basic_string<CharT> &str) -> std::basic_string<CharT>
 {
+  ZoneScopedC(0x3e2ed1);
+
   const std::basic_string<CharT> &path = std::filesystem::current_path().generic_string<CharT>();
   if(!StringStartsWith(path, str))
     return str;
@@ -85,6 +71,8 @@ inline auto RemoveCurrentPathFromString(const std::basic_string<CharT> &str) -> 
 template<typename CharT>
 inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_string<CharT> &delim) noexcept -> std::vector<std::basic_string<CharT>>
 {
+  ZoneScopedC(0x3e2ed1);
+
 	std::vector<std::basic_string<CharT>> result(SubstringCount(str, delim) + 1);
 	
 	std::size_t index = 0;
@@ -103,7 +91,7 @@ inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_st
 
   result.resize(index);
   // In some cases we allocate much more memory than we actuall use, but usually this line can be commented out, depends on demands
-  result.shrink_to_fit();
+  //result.shrink_to_fit();
 
 	return result;
 }
@@ -111,6 +99,8 @@ inline auto SplitString(const std::basic_string<CharT> &str, const std::basic_st
 template<typename CharT>
 inline auto StringStartsWith(const std::basic_string<CharT> &prefix, const std::basic_string<CharT> &str) noexcept -> bool
 {
+  ZoneScopedC(0x3e2ed1);
+
     for(std::size_t i = 0; i < prefix.size(); i++)
     {
       if(str[i] != prefix[i])
@@ -123,6 +113,8 @@ inline auto StringStartsWith(const std::basic_string<CharT> &prefix, const std::
 template<typename CharT>
 inline auto SubstringCount(const std::basic_string<CharT> &str, const std::basic_string<CharT> &substr) noexcept -> std::size_t
 {
+  ZoneScopedC(0x3e2ed1);
+
 	std::size_t count = 0;
 	std::size_t substrPos = str.find(substr);
   while(substrPos != std::basic_string<CharT>::npos)
@@ -135,7 +127,7 @@ inline auto SubstringCount(const std::basic_string<CharT> &str, const std::basic
 }
 
 template<typename CharT>
-inline constexpr auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t
+constexpr inline auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last) noexcept -> std::size_t
 {
   std::size_t result = 0;
 	for(; first != last; first++)
@@ -147,6 +139,8 @@ inline constexpr auto RawStringArrayLength(detail::ConstRawStrArray<CharT> first
 template<typename CharT>
 inline auto ConcatStringArray(detail::ConstRawStrArray<CharT> first, const detail::ConstRawStrArray<CharT> last, const std::basic_string<CharT> &delim) noexcept -> std::basic_string<CharT>
 {
+  ZoneScopedC(0x3e2ed1);
+
 	std::string result;
 	result.reserve(RawStringArrayLength(first, last) + (last - first - 1) * delim.size());
 

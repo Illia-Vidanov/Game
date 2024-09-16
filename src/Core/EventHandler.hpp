@@ -4,16 +4,21 @@
 #include "Setup.hpp"
 
 #include <map>
+#include <set>
 #include <functional>
 #include <cassert>
 #include <queue>
 #include <algorithm>
+#include <string>
+
+#include "Utils/Logger.hpp"
 
 
 namespace game
 {
 enum
 {
+  kNoneEvent,
   kKeyDownEvent,
   kKeyUpEvent,
   kKeyPressedEvent,
@@ -26,19 +31,27 @@ public:
   using TypeType = uint32_t;
   static constexpr inline TypeType kCustomTypeBitMask = TypeType(1) << (sizeof(TypeType) * CHAR_BIT - 1);
 
-  [[nodiscard]] constexpr inline auto GetType() const -> TypeType { return common.type; }
+  
+  [[nodiscard]] constexpr inline auto GetType() const noexcept -> TypeType { return common.type; }
+  /// Get name of event according to type
+  /// If type is custom "Other: (type value)" is returned
+  [[nodiscard]] auto GetName() const noexcept -> std::string;
 	
-	[[nodiscard]] constexpr inline auto GetKeycode() const -> uint16_t { assert(((void)"Acces data from wrong event type", common.type == kKeyDownEvent)); return keyboard.keycode; }
-	[[nodiscard]] constexpr inline auto GetScancode() const -> uint16_t { assert(((void)"Acces data from wrong event type", common.type == kKeyDownEvent)); return keyboard.scancode; }
-	[[nodiscard]] constexpr inline auto GetModKeys() const -> uint16_t { assert(((void)"Acces data from wrong event type", common.type == kKeyDownEvent)); return keyboard.mod_keys; }
-	[[nodiscard]] constexpr inline auto GetCustomData() const -> void* { assert(((void)"Acces data from wrong event type", common.type & kCustomTypeBitMask)); return custom.data; }
+	[[nodiscard]] inline auto GetKeycode() const noexcept -> uint16_t
+  { GAME_ASSERT(common.type == kKeyDownEvent || common.type == kKeyUpEvent || common.type == kKeyPressedEvent) << "Acces data from wrong event type: " << common.type << " expected: kKeyDown/kKeyUp/kKeyPressed"; return keyboard.keycode; }
+	[[nodiscard]] inline auto GetScancode() const noexcept -> uint16_t
+  { GAME_ASSERT(common.type == kKeyDownEvent || common.type == kKeyUpEvent || common.type == kKeyPressedEvent) << "Acces data from wrong event type: " << common.type << " expected: kKeyDown/kKeyUp/kKeyPressed"; return keyboard.scancode; }
+	[[nodiscard]] inline auto GetModKeys() const noexcept -> uint16_t
+  { GAME_ASSERT(common.type == kKeyDownEvent || common.type == kKeyUpEvent || common.type == kKeyPressedEvent) << "Acces data from wrong event type: " << common.type << " expected: kKeyDown/kKeyUp/kKeyPressed"; return keyboard.mod_keys; }
+	[[nodiscard]] inline auto GetCustomData() const noexcept -> void*
+  { GAME_ASSERT(common.type & kCustomTypeBitMask) << "Acces data from wrong event type: " << common.type << " expected: to contain kCustomTypeBitMask"; return custom.data; }
 
 
   struct Common
   {
     friend Event;
   public:
-    explicit constexpr inline Common(TypeType type_data) : type(type_data) {}
+    explicit constexpr inline Common(TypeType type_data) noexcept : type(type_data) {}
 
   // private here is used as const to make it immutable by users
   private:
@@ -48,7 +61,7 @@ public:
 
   struct Keyboard
   {
-    constexpr inline Keyboard(uint16_t keycode_data, uint16_t scancode_data, uint16_t mod_keys_data) : keycode{keycode_data}, scancode{scancode_data}, mod_keys{mod_keys_data} {}
+    constexpr inline Keyboard(uint16_t keycode_data, uint16_t scancode_data, uint16_t mod_keys_data) noexcept : keycode{keycode_data}, scancode{scancode_data}, mod_keys{mod_keys_data} {}
     uint16_t keycode;
 		uint16_t scancode;
 		uint16_t mod_keys;
@@ -60,21 +73,21 @@ public:
 	{
     explicit constexpr inline KeyDown(const Keyboard &keyboard_data) noexcept : Common{kKeyDownEvent}, Keyboard{keyboard_data} {}
 	};
-	inline constexpr Event(const KeyDown &key_down_data) noexcept : key_down{key_down_data} {}
+	constexpr inline Event(const KeyDown &key_down_data) noexcept : key_down{key_down_data} {}
 
 
   struct KeyUp : Common, Keyboard
 	{
     explicit constexpr inline KeyUp(const Keyboard &keyboard_data) noexcept : Common{kKeyUpEvent}, Keyboard{keyboard_data} {}
 	};
-	inline constexpr Event(const KeyUp &key_up_data) noexcept : key_up{key_up_data} {}
+	constexpr inline Event(const KeyUp &key_up_data) noexcept : key_up{key_up_data} {}
 
 
   struct KeyPressed : Common, Keyboard
 	{
     explicit constexpr inline KeyPressed(const Keyboard &keyboard_data) noexcept : Common{kKeyPressedEvent}, Keyboard{keyboard_data} {}
 	};
-	inline constexpr Event(const KeyPressed &key_pressed_data) noexcept : key_pressed{key_pressed_data} {}
+	constexpr inline Event(const KeyPressed &key_pressed_data) noexcept : key_pressed{key_pressed_data} {}
 
 
   struct Quit : Common
@@ -87,11 +100,13 @@ public:
 	/// Custom type should specify it's type for listeners and it's last bit should be 1 or contain just use kCustomTypeBitMask
 	struct Custom : Common
 	{
-    explicit constexpr inline Custom(TypeType custom_type, void *data_data) noexcept : Common(custom_type), data(data_data) { assert(((void)"Custom type's last bit should be 1 or contain just use kCustomTypeBitMask", custom_type & kCustomTypeBitMask)); }
+    explicit constexpr inline Custom(TypeType custom_type, void *data_data) noexcept : Common(custom_type), data(data_data)
+    { GAME_ASSERT_STD(custom_type & kCustomTypeBitMask, "Custom type's should contain kCustomTypeBitMask"); }
 		void *data;
 	};
 	inline Event(const Custom &custom_data) noexcept : custom{custom_data} {}
-  
+
+
 // private here is used as const to make it immutable by users
 private:
   struct CommonKeyboard : Common, Keyboard
@@ -117,40 +132,59 @@ public:
   using CallbackType = bool(*)(const Event &, void *data);
   using MapValueType = std::pair<void*, CallbackType>;
   using MapType = std::multimap<Event::TypeType, MapValueType>;
-  using MapConstIterType = MapType::const_iterator;
+  using MapPtrType = MapType::iterator;
   using QueueType = std::queue<Event>;
 
-  auto AddListener(EventCleaner &cleaner, Event::TypeType type, void *data, CallbackType callback) noexcept -> MapConstIterType;
-  inline void RemoveListener(MapConstIterType it) noexcept { listeners_.erase(it); }
 
+  /// Add to type event listener that will be trigered when event fires
+  /// First in is first to be called when event happens 
+  auto AddListener(EventCleaner &cleaner, Event::TypeType type, void *data, CallbackType callback) noexcept -> MapPtrType;
+  inline void RemoveListener(EventCleaner &cleaner, MapPtrType ptr) noexcept;
+  /// Remove all listeners of specified type
+  void ClearListeners(Event::TypeType type) noexcept;
+ 
+  /// Instantly dispatch event
   void DispatchEvent(const Event &event) noexcept;
-  inline void EnqueEvent(const Event &event) noexcept { queue_.push(event); }
-  inline void DispatchEnquedEvents() noexcept { while(queue_.size()) { DispatchEvent(queue_.front()); queue_.pop(); } }
-
+  /// Poll and dispatch al current SDL events
   void DispatchSDLEvents() noexcept;
+  inline void EnqueEvent(const Event &event) noexcept { queue_.push(event); }
+  inline void DispatchEnquedEvents() noexcept { ZoneScopedC(0xe8bb25); while(queue_.size()) { DispatchEvent(queue_.front()); queue_.pop(); } }
+
 
 private:
+  /// Used in event cleaner to directly remove listener when EventCleaner is destroyed
+  inline void RemoveListener(MapPtrType ptr) noexcept { listeners_.erase(ptr); }  
+
   QueueType queue_;
   MapType listeners_;
 };
 
 
 
+/// Class that manages lifetime of event listeners
+/// It removes listeners that were created using it from EventHandler on destruction
 class EventCleaner
 {
   friend EventHandler;
 public:
-  inline EventCleaner(EventHandler &events) noexcept : events_{events}, iters_{4} {}
-  inline ~EventCleaner() noexcept { for(auto it : iters_) events_.RemoveListener(it); }
+  inline EventCleaner(EventHandler &events) noexcept : events_{events} {}
+  inline ~EventCleaner() noexcept { ZoneScopedC(0xe8bb25); for(auto ptr : ptrs_) events_.RemoveListener(ptr); }
 
-  inline void AddIter(EventHandler::MapConstIterType iter) { iters_.push_back(iter); }
-  inline void RemoveIter(EventHandler::MapConstIterType iter) { iters_.erase(std::find(iters_.begin(), iters_.end(), iter)); }
-  inline void ClearIters() { iters_.clear(); }
+  /// Add ptr (you can get it when adding listener in EventHandler) to EventClener that will be removed from EventHandler on the destruction
+  inline void AddPtr(EventHandler::MapPtrType ptr) noexcept { ptrs_.push_back(ptr); }
+  /// Remove ptr (you can get it when adding listener in EventHandler) from EventCleaner to not remove it on the destruction of a cleaner
+  inline void RemovePtr(EventHandler::MapPtrType ptr) noexcept { std::swap(ptrs_.back(), *std::find(ptrs_.begin(), ptrs_.end(), ptr)); ptrs_.pop_back(); }
+  /// Remove all ptrs from cleaner so they won't be removed on destruction of EventCleaner
+  inline void ClearPtrs() noexcept { ptrs_.clear(); }
 
 private:
   EventHandler &events_;
-  std::vector<EventHandler::MapConstIterType> iters_;
+  std::vector<EventHandler::MapPtrType> ptrs_;
 };
+
+
+
+inline void EventHandler::RemoveListener(EventCleaner &cleaner, MapPtrType ptr) noexcept { listeners_.erase(ptr); cleaner.RemovePtr(ptr); }
 } // game
 
 #endif // GAME_EVENT_HANDLER_HPP

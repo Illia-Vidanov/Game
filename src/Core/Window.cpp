@@ -1,10 +1,12 @@
 #include "Window.hpp"
 
+#include "Setup.hpp"
+
 #include <SDL2/SDL.h>
 
-#include "Setup.hpp"
-#include "Game.hpp"
+#include "Core/Game.hpp"
 #include "Core/Renderer.hpp"
+#include "Utils/Logger.hpp"
 
 
 namespace game
@@ -25,7 +27,7 @@ Window::Window(Game &game) noexcept : game_(game)
                                  height_,
                                  SDL_WINDOW_RESIZABLE | game_.GetRenderer().GetSDLWindowFlags());
   
-  assert(("Couldn't create sdl window", sdl_window_ != nullptr));
+  GAME_ASSERT(sdl_window_ != nullptr) << "Couldn't create sdl window: " << SDL_GetError();
 }
 
 void Window::Exit() noexcept
@@ -39,7 +41,7 @@ void Window::SetResolution(const Eigen::Vector2i &resolution) noexcept
   width_ = resolution(0);
   height_ = resolution(1);
 
-  assert(("Widht and height of a window must be positive intagers", width_ > 0 && height_ > 0));
+  GAME_ASSERT(width_ > 0 && height_ > 0) << "Widht: " << width_ << " and height: " << height_ << " of a window must be positive intagers";
 
   SDL_SetWindowSize(sdl_window_, width_, height_);
 }

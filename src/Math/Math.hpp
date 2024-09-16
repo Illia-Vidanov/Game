@@ -1,12 +1,13 @@
 #ifndef GAME_MATH_HPP
 #define GAME_MATH_HPP
 
+#include "Setup.hpp"
+
 #include <type_traits>
 #include <cmath>
 
-#include "gcem.hpp"
+#include <gcem/gcem.hpp>
 
-#include "Setup.hpp"
 #include "Math/Constants.hpp"
 
 namespace game

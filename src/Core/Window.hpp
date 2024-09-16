@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include <Eigen/Dense>
-
 #include "Setup.hpp"
+
+#include <Eigen/Dense>
 
 
 class SDL_Window;

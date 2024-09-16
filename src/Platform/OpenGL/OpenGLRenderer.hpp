@@ -18,7 +18,9 @@ class OpenGLRenderer : public Renderer
   friend Renderer;
 public:
   void Init(Game &game) noexcept override;
-  void AddToQueue() noexcept override;
+  /// Add mesh to render queue
+  /// First added meshes will be rendered first
+  void AddToQueue() noexcept override {}
   void Render() noexcept override;
   void Exit() noexcept override;
 

@@ -6,12 +6,25 @@
 #include "Setup.hpp"
 #include "Core/Game.hpp"
 #include "Core/Window.hpp"
+#include "Utils/Logger.hpp"
 
+
+#ifndef NDEBUG
+#define GL_CALL(call) do { \
+    call; \
+    while(int error = glGetError()) \
+      GAME_DLOG(LogType::Error) << "OpenGL error: " << error; \
+  } while(0)
+#else
+#define GL_CALL(call) call
+#endif
 
 namespace game
 {
 OpenGLRenderer::OpenGLRenderer() noexcept
 {
+  ZoneScopedC(0x07dbd4);
+
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
@@ -21,21 +34,21 @@ OpenGLRenderer::OpenGLRenderer() noexcept
 
 void OpenGLRenderer::Init(Game &game) noexcept
 {
+  ZoneScopedC(0x07dbd4);
+
   game_ = &game;
   context_ = SDL_GL_CreateContext(game_->GetWindow().GetSDLWindow());
-  gladLoadGLLoader(SDL_GL_GetProcAddress);
+  GAME_ASSERT(context_ != nullptr) << "Couldn't initialize opengl context: " << SDL_GetError();
+  if(!gladLoadGLLoader(SDL_GL_GetProcAddress))
+    GAME_ASSERT(false) << "Failed to load GL loader";
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-  assert(("Couldn't initialize opengl context", context_ != nullptr));
-}
-
-void OpenGLRenderer::AddToQueue() noexcept
-{
+  GL_CALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void OpenGLRenderer::Render() noexcept
 {
+  ZoneScopedC(0x07dbd4);
+
   static bool flip = true;
   static int buffer = 1000;
   buffer--;
@@ -44,17 +57,19 @@ void OpenGLRenderer::Render() noexcept
     flip = !flip;
     buffer = 1000;
     if(flip)
-      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      GL_CALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
     else
-      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+      GL_CALL(glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
   }
 
-  glClear(GL_COLOR_BUFFER_BIT);
+  GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
   SDL_GL_SwapWindow(game_->GetWindow().GetSDLWindow());
 }
 
 void OpenGLRenderer::Exit() noexcept
 {
+  ZoneScopedC(0x07dbd4);
+
   SDL_GL_DeleteContext(context_);
 }
 } // game

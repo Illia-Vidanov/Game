@@ -11,31 +11,57 @@ namespace game
 {
 void EventHandler::DispatchEvent(const Event &event) noexcept
 {
-  std::pair<MapConstIterType, MapConstIterType> range = listeners_.equal_range(event.GetType());
-  MapConstIterType rend = --range.first; 
-  for(--range.second; range.second != rend; --range.second)
+  ZoneScopedC(0xe8bb25);
+
+  ZoneText(event.GetName().c_str(), event.GetName().size());
+
+  std::pair<MapType::const_iterator, MapType::const_iterator> range = listeners_.equal_range(event.GetType());
+
+  ZoneValue(std::distance(range.first, range.second));
+
+  for(; range.first != range.second; ++range.first)
   {
-    // range.second = current listener
-    // range.second->second = value of listener
-    // range.second->second.first = data
-    // range.second->second.second = callback
-    if(!range.second->second.second(event, range.second->second.first))
+    // range.first = current listener
+    // range.first->second = value of listener
+    // range.first->second.first = data
+    // range.first->second.second = callback
+    if(!range.first->second.second(event, range.first->second.first))
       break;
   }
 }
 
-auto EventHandler::AddListener(EventCleaner &cleaner, Event::TypeType type, void *data, CallbackType callback) noexcept -> MapConstIterType
+void EventHandler::ClearListeners(Event::TypeType type) noexcept
 {
-  MapConstIterType it = listeners_.insert(MapType::value_type(type, MapValueType(data, callback)));
-  cleaner.AddIter(it);
+  std::pair<MapType::const_iterator, MapType::const_iterator> range = listeners_.equal_range(type);
+  listeners_.erase(range.first, range.second);
+}
+
+auto EventHandler::AddListener(EventCleaner &cleaner, Event::TypeType type, void *data, CallbackType callback) noexcept -> MapPtrType
+{
+  MapPtrType it = listeners_.insert(MapType::value_type(type, MapValueType(data, callback)));
+  cleaner.AddPtr(it);
   return it;
 }
 
 void EventHandler::DispatchSDLEvents() noexcept
 {
+  ZoneScopedC(0xe8bb25);
+
   SDL_Event event;
+  #ifndef TRACY_ENABLE
   while(SDL_PollEvent(&event))
   {
+  #else
+  while(true)
+  {
+    {
+      ZoneScopedNC("Poll SDL event", 0xe8bb25);
+      int state = SDL_PollEvent(&event);
+      if(!state)
+        break;
+      ZoneValue(event.type);
+    }
+  #endif
     switch(event.type)
     {
     case SDL_QUIT:
@@ -51,6 +77,25 @@ void EventHandler::DispatchSDLEvents() noexcept
     default:
       break;
     }
+  }
+}
+
+auto Event::GetName() const noexcept -> std::string
+{
+  switch(GetType())
+  {
+  case kNoneEvent:
+    return "None";
+  case kQuitEvent:
+    return "Quit";
+  case kKeyDownEvent:
+    return "Key Down";
+  case kKeyUpEvent:
+    return "Key Up";
+  case kKeyPressedEvent:
+    return "Key Pressed";
+  default:
+    return "Other: " + std::to_string(GetType());
   }
 }
 }
