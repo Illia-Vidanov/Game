@@ -4,7 +4,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
-namespace Tolik {}
-using namespace Tolik;
+namespace game {}
+using namespace game;
 
 #endif
